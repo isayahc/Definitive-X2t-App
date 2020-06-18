@@ -9,17 +9,18 @@ from app.Cloud import Cloud
 sched = BlockingScheduler()
 Asched = AsyncIOScheduler()
 
-cloud = Cloud()
-print(cloud.getDefaulttBucketName())
-print(cloud.get_s3_keys())
+# cloud = Cloud()
+# print(cloud.getDefaulttBucketName())
+# print(cloud.get_s3_keys())
+
+# d = Freq.Daily('spy')
+# x = d.collectData()
+# print(x)
 
 
+# daily = Freq.Daily('spy')
+# daily.loadData()
 
-d = Freq.Daily('spy')
-d.collectData()
-
-daily = Freq.Daily('spy')
-daily.loadData()
 
 if Freq.isWeekday and Freq.marketclosed():
     print (datetime.now())

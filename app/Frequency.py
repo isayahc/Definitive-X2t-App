@@ -66,6 +66,13 @@ class Frequency:
     def prefix(self):
         pass
 
+    def UpdateCloud(self):
+        if self.NewInterval:
+            self.cloud_Data()
+
+    @abstractmethod
+    def NewInterval(self):
+        pass
 
 class IntraDay(Frequency):
     def __init__(self, symbol, interval,end=date.today()):
@@ -97,8 +104,7 @@ class IntraDay(Frequency):
         date_form_end = data.head(1).index[0].__str__()
         print([date_form_start,date_form_end])
 
-        return_data = data.loc[self.end.__str__()]
-        self.saveData(return_data)
+        return  data.loc[self.end.__str__()]
         
 class MultiDay(Frequency):
     def __init__(self, symbol, start=None, end=None):
@@ -110,11 +116,9 @@ class MultiDay(Frequency):
         self.set_start_and_end()
 
     def ValidFiles(self):
-        x = [i for i in self.cloud.get_s3_keys() if self.prefix() in i  ]
-        return x[0]
+        return [i for i in self.cloud.get_s3_keys() if self.prefix() in i  ][0]
 
     def set_start_and_end(self):
-        print('Hello')
         try:
             x = [i for i in self.cloud.get_s3_keys() if self.prefix() in i  ]
             data = x[0]
@@ -157,9 +161,6 @@ class MultiDay(Frequency):
     @abstractmethod
     def collectData(self): pass
 
-    def getlastestData(self):
-        pass
-
     def cloud_Data(self):
         self.cloud.downloadData(self.ValidFiles(),self.ValidFiles())
         x = pd.read_csv(self.ValidFiles(), index_col='date')
@@ -177,24 +178,11 @@ class Weekly(MultiDay):
     def collectData(self,outputsize='compact') -> None:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_weekly(self.symbol)
-        data = pd.DataFrame(data)
-        self.start = datetimeToDate(data.index[-1])
-        self.end = datetimeToDate(data.index[0])
-        self.properplace()
-        self.saveData(data)
-
-    def getlastestData(self):
-        ts = TimeSeries(key= key, output_format='pandas')
-        data , metadata = ts.get_weekly(self.symbol)
-        data = pd.DataFrame(data)
-        return data
+        return pd.DataFrame(data)
     
     def NewInterval(self):
         return isFriday() and marketclosed()
 
-    def UpdateCloud(self):
-        if self.NewInterval:
-            self.cloud_Data()
 
 class Monthly(MultiDay):
     def __init__(self, symbol, start=None, end=None):
@@ -202,32 +190,12 @@ class Monthly(MultiDay):
 
     def collectData(self,outputsize='compact') -> None:
         ts = TimeSeries(key= key, output_format='pandas')
-        #optimaize in the future
         data , metadata = ts.get_monthly(self.symbol)
-        data = pd.DataFrame(data)
-        self.start = datetimeToDate(data.index[-1])
-        self.end = datetimeToDate(data.index[0])
-        d = dateEndofMonth(datetimeToDate(data.index[0]))
-        self.properplace()
-        if  d:
-            self.saveData(data)
-            return None
-        new_data = data[1:]
-        self.end = datetimeToDate(new_data.index[0])
-        self.saveData(new_data)
-
-    def getlastestData(self):
-        ts = TimeSeries(key= key, output_format='pandas')
-        data , metadata = ts.get_monthly(self.symbol)
-        data = pd.DataFrame(data)
-        return data
+        return  pd.DataFrame(data)
 
     def NewInterval(self):
         return endofMonth() and marketclosed()
 
-    def UpdateCloud(self):
-        if self.NewInterval():
-            self.cloud_Data()
 
 class Daily(MultiDay):
     def __init__(self, symbol, start=None, end=None):
@@ -235,19 +203,8 @@ class Daily(MultiDay):
 
     def collectData(self,outputsize='compact')-> None:
         ts = TimeSeries(key= key, output_format='pandas')
-        #optimaize in the future
         data , metadata = ts.get_daily(self.symbol,outputsize='full')
-        data = pd.DataFrame(data)
-        self.start = datetimeToDate(data.index[-1])
-        self.end = datetimeToDate(data.index[0])
-        self.properplace()
-        self.saveData(data)
-
-    def getlastestData(self):
-        ts = TimeSeries(key= key, output_format='pandas')
-        data , metadata = ts.get_daily(self.symbol,outputsize='full')
-        data = pd.DataFrame(data)
-        return data
+        return pd.DataFrame(data)
 
     def NewInterval(self):
         return isWeekday() and marketclosed()
@@ -255,6 +212,7 @@ class Daily(MultiDay):
     def UpdateCloud(self):
         if self.NewInterval():
             self.cloud_Data()
+
 
 
 

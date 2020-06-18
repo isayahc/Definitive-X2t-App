@@ -28,7 +28,7 @@ class Cloud:
             raise "There exist no buckets" 
 
     def getDefaulttBucketObject(self):
-        bucket = [i for i in self.resource.buckets.all() if 'xttest' in i][0]
+        bucket = [i for i in self.resource.buckets.all() if 'xttest' in i.name][0]
         if bucket:
             return bucket
         else:

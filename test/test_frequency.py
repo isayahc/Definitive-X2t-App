@@ -13,6 +13,10 @@ def test_Weekly_Constructor():
     w = Weekly('spy')
     assert w.collectData() is pd.DataFrame
 
+def test_Intra_Constructor():
+    i = IntraDay('spy',1)
+    assert i.collectData() is pd.DataFrame
+
 # def test_MultiDay_Constructor():
 #     m = MultiDay('spy')
 #     assert m.collectData() is pd.DataFrame

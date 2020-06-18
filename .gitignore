@@ -3,5 +3,5 @@
 XT/
 **/*.env
 **/*.XT
-
 /env
+__pycahe__
