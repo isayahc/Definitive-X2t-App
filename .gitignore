@@ -1,3 +1,5 @@
 ##filler for now
 .env
 XT/
+**/*.env
+**/*.XT
