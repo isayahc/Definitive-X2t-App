@@ -1,8 +1,21 @@
 from app.Frequency import Frequency, MultiDay, IntraDay, Daily, Weekly, Monthly
 import pandas as pd
+from datetime import date
+import unittest
+import pytest
+
+@pytest.fixture
+def IntraDay():
+    return IntraDay('spy',1)
+
 
 def test_Frequency_Constructor():
     f = Frequency('spy')
+
+def test_Frequency_Constructor():
+    f = Frequency('spy')
+    assert f.end is date
+    assert f.start is date
 
 
 def test_Daily_Constructor():
@@ -20,3 +33,8 @@ def test_Intra_Constructor():
 # def test_MultiDay_Constructor():
 #     m = MultiDay('spy')
 #     assert m.collectData() is pd.DataFrame
+class TestExample(unittest.TestCase):
+
+    def Testx(self):
+        results = Daily('spy')
+        self.assertIsInstance(results, pd.DataFrame)

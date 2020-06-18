@@ -36,3 +36,15 @@ def tick():
 #     sched.add_job(tick, 'cron', day_of_week='mon-fri', hour=16,minute=2)
 #     sched.add_job(tick, 'interval', minutes=.2)
 #     sched.start()
+
+x = Freq.Daily('spy')
+y = Freq.Weekly('spy')
+z = Freq.Monthly('spy')
+
+print(z.NewInterval())
+dated =(x,y,z)
+print ([d.NewInterval() for d in dated])
+
+# y.UpdateCloud()
+i =Freq.IntraDay('spy',1)
+i.collectDataToCloud()

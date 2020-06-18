@@ -1,5 +1,5 @@
 from datetime import date, datetime, time, timedelta
-from os import path, getenv
+from os import path, getenv, listdir
 import pandas as pd
 from app.Cloud import Cloud
 from abc import abstractmethod
@@ -36,10 +36,11 @@ class Frequency:
         except FileNotFoundError:
             self.cloud.downloadData(self.fileFormat(),self.fileFormat())
             return pd.read_csv(self.fileFormat(), index_col='date')
+        else:
+            raise FileNotFoundError
 
-    def saveData(self,df: pd.DataFrame):
+    def saveDataLocally(self,df: pd.DataFrame):
         fileform = self.fileFormat()
-        print('saving data')
         if path.isfile(fileform):
             print(f"reading data from {fileform}")
             read_df = pd.read_csv(fileform, index_col='date')
@@ -47,32 +48,45 @@ class Frequency:
             temp_df.to_csv(fileform)
             self.cleanData()
         else:
-            print("creating file")
             print(f"Creating {fileform}....")
             df.to_csv(fileform)
 
-    def cleanData(self):
-        try:
-            x = pd.read_csv(self.fileFormat(), index_col='date')
-            duplicates = x.index.duplicated()
-            keep = duplicates == False
-            clean_data = x.loc[keep,:]
-            clean_date = clean_data.iloc[::-1]
-            clean_data.to_csv(self.fileFormat())
-        except FileExistsError:
-            print("file doesn't exist")
-
-    @abstractmethod
-    def prefix(self):
-        pass
+    def cleanData(self, df=None) -> pd.DataFrame:
+        if df is None:
+            try:
+                x = pd.read_csv(self.fileFormat(), index_col='date')
+                duplicates = x.index.duplicated()
+                keep = duplicates == False
+                clean_data = x.loc[keep,:]
+                return clean_data
+            except FileExistsError:
+                print("file doesn't exist")
+        else:
+            try:
+                x = pd.DataFrame(df)
+                print(x)
+                duplicates = x.index.duplicated()
+                keep = duplicates == False
+                clean_data = x.loc[keep,:]
+                return clean_data
+            except FileExistsError:
+                print("file doesn't exist")
 
     def UpdateCloud(self):
         if self.NewInterval:
             self.cloud_Data()
 
     @abstractmethod
-    def NewInterval(self):
-        pass
+    def NewInterval(self): pass
+
+    @abstractmethod
+    def collectData(self) -> pd.DataFrame: pass
+
+    @abstractmethod
+    def prefix(self): pass
+
+    @abstractmethod
+    def ValidFiles(self): pass
 
 class IntraDay(Frequency):
     def __init__(self, symbol, interval,end=date.today()):
@@ -81,6 +95,9 @@ class IntraDay(Frequency):
         if interval not in [1,5,10,15,30,60]:
             raise ValueError(f"valid intervals are{[1,5,10,15,30,60]}")
         self.interval = interval
+
+    def ValidFiles(self):
+        return [i for i in self.cloud.get_s3_keys() if self.prefix() in i ]
 
     def __repr__(self):
         return f'end:{self.end}'
@@ -91,7 +108,7 @@ class IntraDay(Frequency):
     def prefix(self):
         return "_".join((str(self).split('_')[:2]))
 
-    def collectData(self) ->None:
+    def collectData(self):
         week_day = date(*[int(i) for i in str(self.end).split('-')]).weekday()
         #This means that the market is open
         start = '9:31:00'
@@ -105,7 +122,27 @@ class IntraDay(Frequency):
         print([date_form_start,date_form_end])
 
         return  data.loc[self.end.__str__()]
-        
+    
+    def collectDataToCloud(self):
+        week_day = date(*[int(i) for i in str(self.end).split('-')]).weekday()
+        #This means that the market is open
+
+        ts = TimeSeries(key= key, output_format='pandas')
+        data , metadata = ts.get_intraday(symbol=self.symbol,
+        interval=f'{self.interval}min', outputsize='full')
+
+        while len(data) !=0:
+            date_form_end = data.head(1).index[0].__str__()
+            d = date_form_end.__str__().split(' ')[0]
+            k = data.loc[d]
+            data = data[~data.isin(k)].dropna()
+            print(k)
+            k.to_csv(IntraDay(self.symbol,self.interval,d).fileFormat())
+
+        x = [i for i in listdir() if self.prefix() in i ]
+        [self.cloud.storeDataonBucket(i) for i in x ]
+
+    
 class MultiDay(Frequency):
     def __init__(self, symbol, start=None, end=None):
         super().__init__(symbol, start=start, end=end)
@@ -115,24 +152,17 @@ class MultiDay(Frequency):
         self.cloud = Cloud()
         self.set_start_and_end()
 
-    def ValidFiles(self):
-        return [i for i in self.cloud.get_s3_keys() if self.prefix() in i  ][0]
-
     def set_start_and_end(self):
         try:
-            x = [i for i in self.cloud.get_s3_keys() if self.prefix() in i  ]
-            data = x[0]
-            print(data)
-            self.start , self.end = (str(x[0]).split('.')[0]).split('_')[-2:]
-            print(self.start, self.end)
-            # print(self.__repr__)
+            x = ((self.ValidFiles()).split('.')[0]).split('_')[-2:]
+            self.start, self.end = x
+            assert self.start < self.end
         except IndexError:
             print('getting new data')
-            self.collectData()
-            print(self)
-            self.start , self.end = (str(self).split('.')[0]).split('_')[-2:]
+            x = self.collectData()
+            self.start = datetimeToDate(x.index[-1])
+            self.end = datetimeToDate(x.index[0])
             print(self.start, self.end)
-            print(self.__repr__)
             start = strToDate(self.start)
             end = strToDate(self.end)
             assert start < end
@@ -141,78 +171,80 @@ class MultiDay(Frequency):
             start = strToDate(self.start)
             end = strToDate(self.end)
             assert start < end
-            pass
-
-    @abstractmethod
-    def UpdateCloud(self):
-        pass
-
-    @abstractmethod
-    def NewInterval(self):
-        pass
 
     def __str__(self):
         return f'{self.symbol}_{type(self).__name__.lower()}_{self.start}_{self.end}'
+
+    def ValidFiles(self):
+        return [i for i in self.cloud.get_s3_keys() if self.prefix() in i ][0]
 
     def prefix(self):
         k = (type(self).__name__).lower()
         return f'{self.symbol}_{k}'
 
-    @abstractmethod
-    def collectData(self): pass
-
-    def cloud_Data(self):
+    def cloud_df(self):
         self.cloud.downloadData(self.ValidFiles(),self.ValidFiles())
-        x = pd.read_csv(self.ValidFiles(), index_col='date')
-        duplicates = x.index.duplicated()
-        keep = duplicates == False
-        clean_data = x.loc[keep,:]
-        self.start = datetimeToDate(clean_data.index[-1])
-        self.end = datetimeToDate(clean_data.index[0])
-        clean_data.to_csv(self.fileFormat())
+        return pd.read_csv(self.ValidFiles(), index_col='date')
+        
+    def combineCloudandAPI(self): 
+        cdf = self.cloud_df()
+        newdf = self.collectData()
+        temp_data = cdf.combine_first(newdf)
+        x = self.cleanData(temp_data)
+        #might cause issues in the future
+        self.start = (x.index[0]).__str__().split(' ')[0]
+        self.end = (x.index[-1]).__str__().split(' ')[0]
+        self.properplace()
+        return x
 
-class Weekly(MultiDay):
-    def __init__(self, symbol, start=None, end=None):
-        super().__init__(symbol, start=start, end=end)
+    def UpdateCloud(self):
+        if not self.NewInterval():
+            raise PermissionError('not the right time')
+        else:
+            new_data = self.combineCloudandAPI()
+            new_data.to_csv(self.fileFormat())
+            self.cloud.deleteFile(self.ValidFiles())
+            self.cloud.storeDataonBucket(self.fileFormat())
+            print('presto')
 
-    def collectData(self,outputsize='compact') -> None:
-        ts = TimeSeries(key= key, output_format='pandas')
-        data , metadata = ts.get_weekly(self.symbol)
-        return pd.DataFrame(data)
-    
-    def NewInterval(self):
-        return isFriday() and marketclosed()
-
-
-class Monthly(MultiDay):
-    def __init__(self, symbol, start=None, end=None):
-        super().__init__(symbol, start=start, end=end)
-
-    def collectData(self,outputsize='compact') -> None:
-        ts = TimeSeries(key= key, output_format='pandas')
-        data , metadata = ts.get_monthly(self.symbol)
-        return  pd.DataFrame(data)
-
-    def NewInterval(self):
-        return endofMonth() and marketclosed()
-
+    @abstractmethod
+    def NewInterval(self): pass
 
 class Daily(MultiDay):
     def __init__(self, symbol, start=None, end=None):
         super().__init__(symbol, start=start, end=end)
 
-    def collectData(self,outputsize='compact')-> None:
+    def collectData(self,outputsize='compact'):
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_daily(self.symbol,outputsize='full')
         return pd.DataFrame(data)
 
     def NewInterval(self):
-        return isWeekday() and marketclosed()
+        return marketclosed() and isWeekday()
 
-    def UpdateCloud(self):
-        if self.NewInterval():
-            self.cloud_Data()
+class Weekly(MultiDay):
+    def __init__(self, symbol, start=None, end=None):
+        super().__init__(symbol, start=start, end=end)
 
+    def collectData(self,outputsize='compact'):
+        ts = TimeSeries(key= key, output_format='pandas')
+        data , metadata = ts.get_weekly(self.symbol)
+        return pd.DataFrame(data)
+
+    def NewInterval(self):
+        return isFriday()
+
+class Monthly(MultiDay):
+    def __init__(self, symbol, start=None, end=None):
+        super().__init__(symbol, start=start, end=end)
+
+    def collectData(self,outputsize='compact'):
+        ts = TimeSeries(key= key, output_format='pandas')
+        data , metadata = ts.get_monthly(self.symbol)
+        return  pd.DataFrame(data)
+
+    def NewInterval(self):
+        return dateEndofMonth()
 
 
 
@@ -249,7 +281,7 @@ def endofMonth():
             x - timedelta(days=1)
             return date.today() == x
 
-def dateEndofMonth(date_data: date):
+def dateEndofMonth(date_data: date= datetime.today()):
     m = date_data.month
     y = date_data.year
     day,m_date = monthrange(y,m)

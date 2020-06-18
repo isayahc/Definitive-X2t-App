@@ -74,5 +74,5 @@ class Cloud:
         return keys
 
     def deleteFile(self, file: str):
-        bucket = self.getDefaulttBucketObject()
+        bucket = self.getDefaulttBucketName()
         self.resource.Object(bucket, file).delete()
