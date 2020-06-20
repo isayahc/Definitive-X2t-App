@@ -6,9 +6,6 @@ import os
 import app.Frequency as Freq
 from app.Cloud import Cloud
 
-sched = BlockingScheduler()
-Asched = AsyncIOScheduler()
-
 i = Freq.IntraDay('spy',1)
 x = Freq.Daily('spy')
 y = Freq.Weekly('spy')
@@ -27,6 +24,9 @@ def update_all():
             d.UpdateCloud()
         except PermissionError:
             continue
+    sched.remove_job(sched.get_jobs()[1])
+
+
 
 
 def test():
@@ -34,6 +34,7 @@ def test():
     loop = asyncio.new_event_loop()
     cors = asyncio.wait([i.dataStream()])
     loop.run_until_complete(cors)
+    sched.remove_job(sched.get_jobs()[0])
 
 
 if __name__ =='__main__':
