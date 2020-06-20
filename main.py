@@ -42,6 +42,6 @@ if __name__ =='__main__':
     plus2 = datetime.now()+ timedelta(minutes=2)
 
     sched.add_job(test, 'cron', day_of_week='mon-fri', hour= now.hour,minute=now.minute+1 )
-    sched.add_job(test, 'cron', day_of_week='mon-fri', hour= 16,minute=2 )
+    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=2 )
     sched.start()
 
