@@ -1,5 +1,5 @@
 from datetime import date, datetime, time, timedelta
-from os import path, getenv, listdir
+from os import path, getenv, listdir, remove
 import pandas as pd
 from app.Cloud import Cloud
 from abc import abstractmethod
@@ -139,8 +139,30 @@ class IntraDay(Frequency):
             print(k)
             k.to_csv(IntraDay(self.symbol,self.interval,d).fileFormat())
 
-        x = [i for i in listdir() if self.prefix() in i ]
+        x = [i for i in listdir() if self.prefix() in i and i not in self.ValidFiles() ]
         [self.cloud.storeDataonBucket(i) for i in x ]
+        # print( [ i in  listdir() if self.prefix() ] )
+
+    async def dataStream(self):      
+        if isWeekday() and markethours():
+            flag = True
+            while markethours():
+                x = self.collectData()
+                self.saveDataLocally(x)
+                await asyncio.sleep(self.interval * 60)
+                if len(x) == 0:
+                    flag == False
+                    raise "Something is off"
+            
+            self.cloud.storeDataonBucket(self.fileFormat())
+        else:
+            print('not now')
+            raise InterruptedError
+                    
+                
+
+
+        
 
     
 class MultiDay(Frequency):
@@ -232,7 +254,7 @@ class Weekly(MultiDay):
         return pd.DataFrame(data)
 
     def NewInterval(self):
-        return isFriday()
+        return isFriday() and marketclosed()
 
 class Monthly(MultiDay):
     def __init__(self, symbol, start=None, end=None):
