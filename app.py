@@ -11,8 +11,10 @@ from flask import Flask
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
 c = Cloud()
 x = c.get_s3_keys()
+
 server = app.server
 
 app.layout = html.Div([
