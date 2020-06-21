@@ -4,14 +4,16 @@ import uuid
 from boto3 import client, resource
 import logging
 import os
+from app.config import APIs
 
 
 #default bucket value or change
 
 class Cloud:
     def __init__(self):
-        resource = boto3.resource('s3')
-        client = boto3.client('s3')
+        cred = APIs.getamazonCreditals() 
+        resource = boto3.Session(**cred).resource('s3')
+        client = boto3.Session(**cred).client('s3')
         self.resource = resource
         self.client = client
 
