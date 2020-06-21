@@ -11,7 +11,7 @@ from app.config import APIs
 
 class Cloud:
     def __init__(self):
-        cred = APIs.getamazonCreditals() 
+        cred = APIs().getamazonCreditals() 
         resource = boto3.Session(**cred).resource('s3')
         client = boto3.Session(**cred).client('s3')
         self.resource = resource
