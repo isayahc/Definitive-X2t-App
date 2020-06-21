@@ -20,7 +20,7 @@ class APIs:
         cred = dict({
             'AWS_ACCESS_KEY_ID'.lower() : os.getenv('AWS_ACCESS_KEY_ID'),
             'AWS_SECRET_ACCESS_KEY'.lower() : os.getenv('AWS_SECRET_ACCESS_KEY'),
-            'AWS_DEFAULT_REGION'.lower() : os.getenv('AWS_DEFAULT_REGION')
+            'region_name'.lower() : os.getenv('AWS_DEFAULT_REGION')
 
         })
         # AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
