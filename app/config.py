@@ -28,5 +28,3 @@ class APIs:
         # AWS_DEFAULT_REGION = os.getenv('AWS_DEFAULT_REGION')
 
         return cred
-
-api = APIs().getAlphaKey()

@@ -84,8 +84,7 @@ def display_page(pathname):
 [Input('interval-component', 'n_intervals')])
 def update_graph_live(n):
     i = IntraDay('spy',1)
-    i.collectData()
-    df = i.loadData()
+    df = i.collectData()
 
     fig = plotly.tools.make_subplots(rows=2, cols=1, vertical_spacing=0.2)
     fig['layout']['margin'] = {
