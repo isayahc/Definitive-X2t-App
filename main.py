@@ -39,12 +39,11 @@ def test():
 
 if __name__ =='__main__':
     i = Freq.IntraDay('spy',1)
-    print(i)
-    # sched = BlockingScheduler()
-    # now = datetime.now()
-    # plus2 = datetime.now()+ timedelta(minutes=2)
+    sched = BlockingScheduler()
+    now = datetime.now()
+    plus2 = datetime.now()+ timedelta(minutes=2)
 
-    # sched.add_job(test, 'cron', day_of_week='mon-fri', hour= now.hour,minute=now.minute+1 )
-    # sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=2 )
-    # sched.start()
+    sched.add_job(test, 'cron', day_of_week='mon-fri', hour= now.hour,minute=now.minute+1 )
+    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=2 )
+    sched.start()
 
