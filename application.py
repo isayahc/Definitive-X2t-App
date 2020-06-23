@@ -13,7 +13,8 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 c = Cloud()
-x = c.get_s3_keys()
+print(c.get_s3_keys())
+x = c.get_s3_keys() + [IntraDay('spy',1).fileFormat()]
 
 server = app.server
 
