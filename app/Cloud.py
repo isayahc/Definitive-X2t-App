@@ -1,34 +1,43 @@
-import boto3
 import botocore
 import uuid
 from boto3 import client, resource
 import logging
 import os
+from app.config import APIs
 
 
 #default bucket value or change
 
 class Cloud:
     def __init__(self):
-        resource = boto3.resource('s3')
-        client = boto3.client('s3')
-        self.resource = resource
-        self.client = client
+        x = APIs().getamazonCreditals()
+        self.cloud_resource = resource(
+            's3',
+            aws_access_key_id = x['aws_access_key_id'],
+            aws_secret_access_key = x['aws_secret_access_key'],
+        )
+        self.cloud_client = client(
+            's3',
+            aws_access_key_id = x['aws_access_key_id'],
+            aws_secret_access_key = x['aws_secret_access_key'],
+        )
+        # self.resource = resource
+        # self.client = client
 
     def printBuckets(self) -> None:
         '''Prints all existing buckets'''
-        for bucket in self.resource.buckets.all():
+        for bucket in self.cloud_resource.buckets.all():
             print(bucket)
 
     def getDefaulttBucketName(self) -> str:
-        buckets = [i.name for i in self.resource.buckets.all() if 'xttest' in i.name][0]
+        buckets = [i.name for i in self.cloud_resource.buckets.all() if 'xttest' in i.name][0]
         if buckets:
             return buckets
         else:
             raise "There exist no buckets" 
 
     def getDefaulttBucketObject(self):
-        bucket = [i for i in self.resource.buckets.all() if 'xttest' in i.name][0]
+        bucket = [i for i in self.cloud_resource.buckets.all() if 'xttest' in i.name][0]
         if bucket:
             return bucket
         else:
@@ -43,11 +52,11 @@ class Cloud:
     def storeDataonBucket(self,file):
         ''' Probably needs some tweaking. Uploads data to the cloud'''
         try:
-            self.resource.Object(self.getDefaulttBucketName(), file).put(Body=open(file, 'rb'))
+            self.cloud_resource.Object(self.getDefaulttBucketName(), file).put(Body=open(file, 'rb'))
         except FileNotFoundError:
             #probably should not create an empty file just to upload
             open(file, 'w')
-            self.resource.Object(self.getDefaulttBucketName(), file).put(Body=open(file, 'rb'))
+            self.cloud_resource.Object(self.getDefaulttBucketName(), file).put(Body=open(file, 'rb'))
         # except FileNotFoundError:
         #     os.makedirs(file.split('/')[0])
         finally:
@@ -68,11 +77,11 @@ class Cloud:
     def get_s3_keys(self):
         """Get a list of keys in an S3 bucket."""
         keys = []
-        resp = self.client.list_objects_v2(Bucket= self.getDefaulttBucketName())
+        resp = self.cloud_client.list_objects_v2(Bucket= self.getDefaulttBucketName())
         for obj in resp['Contents']:
             keys.append(obj['Key'])
         return keys
 
     def deleteFile(self, file: str):
         bucket = self.getDefaulttBucketName()
-        self.resource.Object(bucket, file).delete()
+        self.cloud_resource.Object(bucket, file).delete()
