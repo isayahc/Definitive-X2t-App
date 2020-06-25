@@ -1,9 +1,13 @@
 from app.Cloud import Cloud
-from app.Frequency import IntraDay
+from app.Frequency import IntraDay, Monthly, Daily, Weekly
 
-c = Cloud()
-print(c.get_s3_keys())
 
-i = IntraDay('spy',1)
-i.collectData()
 
+# data = [Weekly('spy'),Daily('spy'),Weekly('spy')]
+
+d = Daily('spy')
+w = Weekly('spy')
+m = Monthly('spy')
+
+w.
+wd = w.cloud_df()

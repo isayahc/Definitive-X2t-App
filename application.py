@@ -8,15 +8,11 @@ import pandas as pd
 from app.Frequency import IntraDay
 from flask import Flask
 
-
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
 
 c = Cloud()
-print(c.get_s3_keys())
-x = c.get_s3_keys() + [IntraDay('spy',1).fileFormat()]
-
-server = app.server
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -61,12 +57,11 @@ page_2_layout = html.Div([
     html.Div(id='historical-page'),
     dcc.Dropdown(
         id='drop-down-data',
-            options=[ {'label': i, 'value': i}  for i in x ],
-            value= x[-1],
+            options=[ {'label': i, 'value': i}  for i in c.get_s3_keys() ],
+            value= c.get_s3_keys()[-1],
 
     ),
     dcc.Graph(id='static-graph'),
-
 ])
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
@@ -85,12 +80,12 @@ def display_page(pathname):
 def update_graph_live(n):
     i = IntraDay('spy',1)
     df = i.collectData()
+    df.to_csv(i.fileFormat())
 
     fig = plotly.tools.make_subplots(rows=2, cols=1, vertical_spacing=0.2)
     fig['layout']['margin'] = {
         'l': 30, 'r': 10, 'b': 30, 't': 10
     }
-    #fig['layout']['legend'] = {'x': 0, 'y': 1, 'xanchor': 'left'}
 
     fig.append_trace({
         'x': df.index,
@@ -117,7 +112,6 @@ def page_2_radios(value):
     try:
         df =pd.read_csv(value, index_col='date')
     except FileNotFoundError:
-        c = Cloud()
         c.downloadData(value,value)
         df = pd.read_csv(value, index_col='date')
         
@@ -143,7 +137,6 @@ def page_2_radios(value):
 [Input('interval-component', 'n_intervals')]
 )
 def update_metrics(n):
-    
     i = IntraDay('spy',1)
     df = i.loadData()
     
@@ -168,3 +161,4 @@ def update_metrics(n):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+    
