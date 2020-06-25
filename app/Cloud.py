@@ -4,8 +4,6 @@ from boto3 import client, resource
 import logging
 import os
 from app.config import APIs
-
-
 #default bucket value or change
 
 class Cloud:

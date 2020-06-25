@@ -5,6 +5,7 @@ import app.Frequency as Freq
 from app.Cloud import Cloud
 
 def update_all():
+    print("i am now running")
     for d in dated:
         try:
             d.UpdateCloud()
@@ -25,4 +26,3 @@ if __name__ =='__main__':
     sched = BlockingScheduler()
     sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=4 )
     sched.start()
-
