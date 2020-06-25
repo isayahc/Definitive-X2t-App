@@ -4,7 +4,8 @@ XT/
 **/*.env
 **/*.XT
 /env
-__pycahe__
+__pycache__
 test.py 
-*/__pycahe__
-**/__pycahe__
+*/__pycache__
+**/__pycache__
+*/.pytest_cache

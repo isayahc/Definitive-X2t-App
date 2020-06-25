@@ -1,7 +1,5 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-import asyncio
 import os
 import app.Frequency as Freq
 from app.Cloud import Cloud
