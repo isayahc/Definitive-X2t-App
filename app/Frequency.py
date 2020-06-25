@@ -164,6 +164,12 @@ class IntraDay(Frequency):
         else:
             print('not now')
             raise InterruptedError
+
+    def UpdateCloud(self) -> None:
+        if not self.NewInterval():
+            raise PermissionError('not the right time')
+        else: 
+            self.collectDataToCloud()
                      
 class MultiDay(Frequency):
     def __init__(self, symbol, start=None, end=None):
