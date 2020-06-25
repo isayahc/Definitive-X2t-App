@@ -15,11 +15,13 @@ class Cloud:
             's3',
             aws_access_key_id = x['aws_access_key_id'],
             aws_secret_access_key = x['aws_secret_access_key'],
+            region_name= x['region_name'],
         )
         self.cloud_client = client(
             's3',
             aws_access_key_id = x['aws_access_key_id'],
             aws_secret_access_key = x['aws_secret_access_key'],
+            region_name= x['region_name'],
         )
         # self.resource = resource
         # self.client = client

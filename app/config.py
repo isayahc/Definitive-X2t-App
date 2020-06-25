@@ -19,7 +19,7 @@ class APIs:
     def getamazonCreditals(self) ->dict:
         cred = dict({
             'AWS_ACCESS_KEY_ID'.lower() : os.getenv('AWS_ACCESS_KEY_ID'),
-            'AWS_SECRET_ACCESS_KEY'.lower() : os.getenv('AWS_SECRET_ACCESS_KEY'),
+            'aws_secret_access_key'.lower() : os.getenv('AWS_SECRET_ACCESS_KEY'),
             'region_name'.lower() : os.getenv('AWS_DEFAULT_REGION')
 
         })
