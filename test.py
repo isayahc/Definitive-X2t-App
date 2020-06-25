@@ -9,5 +9,5 @@ d = Daily('spy')
 w = Weekly('spy')
 m = Monthly('spy')
 
-w.
+
 wd = w.cloud_df()
