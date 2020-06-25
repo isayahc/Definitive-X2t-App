@@ -21,16 +21,20 @@ class Frequency:
         end = strToDate(self.end)
         assert start < end
 
-    def fileFormat(self):
+    def fileFormat(self)-> str:
         return f'{self}.csv'
     
     def __repr__(self):
+        ''' returns the start and end date of a file'''
         return f'start:{self.start} end:{self.end}'
     
-    def SaveToCloud(self):
+    def SaveToCloud(self)->None:
+        '''Saves data to s3 bucket'''
         self.c.storeDataonBucket(self.fileFormat())
     
-    def loadData(self):
+    def loadData(self)->None:
+        '''will attempt to retrieve data on the local machine. If unseccessful, it will search the cloud
+        '''
         try:
             return pd.read_csv(self.fileFormat(), index_col='date')
         except FileNotFoundError:
@@ -39,7 +43,8 @@ class Frequency:
         else:
             raise FileNotFoundError
 
-    def saveDataLocally(self,df: pd.DataFrame):
+    def saveDataLocally(self,df: pd.DataFrame)->None:
+        '''saves data to Local machine'''
         fileform = self.fileFormat()
         if path.isfile(fileform):
             print(f"reading data from {fileform}")
@@ -52,6 +57,7 @@ class Frequency:
             df.to_csv(fileform)
 
     def cleanData(self, df=None) -> pd.DataFrame:
+        '''Removes duplicate data'''
         if df is None:
             try:
                 x = pd.read_csv(self.fileFormat(), index_col='date')
@@ -75,8 +81,6 @@ class Frequency:
     def UpdateCloud(self):
         if self.NewInterval:
             self.cloud_Data()
-        else:
-            print("condition failed")
 
     @abstractmethod
     def NewInterval(self): pass
@@ -104,13 +108,13 @@ class IntraDay(Frequency):
     def __repr__(self):
         return f'end:{self.end}'
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f'{self.symbol}_{self.interval}min_{self.end}'
 
-    def prefix(self) -> str:
+    def prefix(self):
         return "_".join((str(self).split('_')[:2]))
 
-    def collectData(self) -> pd.DataFrame:
+    def collectData(self):
         week_day = date(*[int(i) for i in str(self.end).split('-')]).weekday()
         #This means that the market is open
         start = '9:31:00'
@@ -122,9 +126,10 @@ class IntraDay(Frequency):
 
         date_form_end = data.head(1).index[0].__str__()
         print([date_form_start,date_form_end])
+
         return  data.loc[self.end.__str__()]
     
-    def collectDataToCloud(self) -> None:
+    def collectDataToCloud(self):
         week_day = date(*[int(i) for i in str(self.end).split('-')]).weekday()
         #This means that the market is open
 
@@ -142,7 +147,7 @@ class IntraDay(Frequency):
 
         x = [i for i in listdir() if self.prefix() in i and i not in self.ValidFiles() ]
         [self.cloud.storeDataonBucket(i) for i in x ]
-        [remove(i) for i in listdir() if self.prefix() in i]
+        # print( [ i in  listdir() if self.prefix() ] )
 
     async def dataStream(self):      
         if isWeekday() and markethours():
@@ -159,13 +164,7 @@ class IntraDay(Frequency):
         else:
             print('not now')
             raise InterruptedError
-
-    def UpdateCloud(self) -> None:
-        if not self.NewInterval():
-            raise PermissionError('not the right time')
-        else: 
-            self.collectDataToCloud()
-    
+                     
 class MultiDay(Frequency):
     def __init__(self, symbol, start=None, end=None):
         super().__init__(symbol, start=start, end=end)
@@ -189,6 +188,7 @@ class MultiDay(Frequency):
             start = strToDate(self.start)
             end = strToDate(self.end)
             assert start < end
+            x.to_csv(self.fileFormat())
             self.cloud.storeDataonBucket((self.fileFormat()))
         finally:
             start = strToDate(self.start)
@@ -198,7 +198,8 @@ class MultiDay(Frequency):
     def __str__(self):
         return f'{self.symbol}_{type(self).__name__.lower()}_{self.start}_{self.end}'
 
-    def ValidFiles(self):
+    def ValidFiles(self) -> list:
+        '''returns a list of files that matches the prefix'''
         return [i for i in self.cloud.get_s3_keys() if self.prefix() in i ][0]
 
     def prefix(self):
@@ -206,10 +207,14 @@ class MultiDay(Frequency):
         return f'{self.symbol}_{k}'
 
     def cloud_df(self):
+        '''returns the data on the cloud in a DataFrame'''
         self.cloud.downloadData(self.ValidFiles(),self.ValidFiles())
         return pd.read_csv(self.ValidFiles(), index_col='date')
         
-    def combineCloudandAPI(self): 
+    def combineCloudandAPI(self):
+        '''
+        Combines data recently created with data on the cloud
+        '''
         cdf = self.cloud_df()
         newdf = self.collectData()
         temp_data = cdf.combine_first(newdf)
@@ -220,7 +225,10 @@ class MultiDay(Frequency):
         self.properplace()
         return x
 
-    def UpdateCloud(self):
+    def UpdateCloud(self) -> None:
+        """
+        If The appropiate time is reached. This will update data in the buckets
+        """
         if not self.NewInterval():
             raise PermissionError('not the right time')
         else:
@@ -231,45 +239,49 @@ class MultiDay(Frequency):
             print('presto')
 
     @abstractmethod
-    def NewInterval(self): pass
+    def NewInterval(self) -> bool: pass
+
+    @abstractmethod
+    def collectData(self) -> pd.DataFrame: pass
 
 class Daily(MultiDay):
     def __init__(self, symbol, start=None, end=None):
         super().__init__(symbol, start=start, end=end)
 
-    def collectData(self,outputsize='compact'):
+    def collectData(self,outputsize='compact') -> pd.DataFrame:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_daily(self.symbol,outputsize='full')
         return pd.DataFrame(data)
 
-    def NewInterval(self):
+    def NewInterval(self) -> bool:
+        '''True if the trading day is over'''
         return marketclosed() and isWeekday()
 
 class Weekly(MultiDay):
     def __init__(self, symbol, start=None, end=None):
         super().__init__(symbol, start=start, end=end)
 
-    def collectData(self,outputsize='compact'):
+    def collectData(self,outputsize='compact') -> pd.DataFrame:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_weekly(self.symbol)
         return pd.DataFrame(data)
 
-    def NewInterval(self):
+    def NewInterval(self) ->bool:
+        '''true if the trading week is over'''
         return isFriday() and marketclosed()
 
 class Monthly(MultiDay):
     def __init__(self, symbol, start=None, end=None):
         super().__init__(symbol, start=start, end=end)
 
-    def collectData(self,outputsize='compact'):
+    def collectData(self,outputsize='compact') -> pd.DataFrame:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_monthly(self.symbol)
         return  pd.DataFrame(data)
 
-    def NewInterval(self):
+    def NewInterval(self) -> bool:
+        '''true if the trading month is over'''
         return dateEndofMonth()
-
-
 
 ### Helper functions
 def datetimeToDate(x:datetime):
@@ -282,10 +294,10 @@ def isWeekday():
     return 7 > date.today().weekday() <= 4
 
 def markethours():
-    return time(9,30) < datetime.now().time() < time(16,2)
+    return time(9,30) < datetime.now().time() < time(16,3)
 
 def marketclosed():
-    return datetime.now().time() > time(16,2)
+    return datetime.now().time() > time(16,3)
 
 def isFriday():
     return date.today().weekday() == 4
