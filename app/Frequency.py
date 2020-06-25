@@ -75,6 +75,8 @@ class Frequency:
     def UpdateCloud(self):
         if self.NewInterval:
             self.cloud_Data()
+        else:
+            print("condition failed")
 
     @abstractmethod
     def NewInterval(self): pass
@@ -102,13 +104,13 @@ class IntraDay(Frequency):
     def __repr__(self):
         return f'end:{self.end}'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.symbol}_{self.interval}min_{self.end}'
 
-    def prefix(self):
+    def prefix(self) -> str:
         return "_".join((str(self).split('_')[:2]))
 
-    def collectData(self):
+    def collectData(self) -> pd.DataFrame:
         week_day = date(*[int(i) for i in str(self.end).split('-')]).weekday()
         #This means that the market is open
         start = '9:31:00'
@@ -120,10 +122,9 @@ class IntraDay(Frequency):
 
         date_form_end = data.head(1).index[0].__str__()
         print([date_form_start,date_form_end])
-
         return  data.loc[self.end.__str__()]
     
-    def collectDataToCloud(self):
+    def collectDataToCloud(self) -> None:
         week_day = date(*[int(i) for i in str(self.end).split('-')]).weekday()
         #This means that the market is open
 
@@ -141,7 +142,7 @@ class IntraDay(Frequency):
 
         x = [i for i in listdir() if self.prefix() in i and i not in self.ValidFiles() ]
         [self.cloud.storeDataonBucket(i) for i in x ]
-        # print( [ i in  listdir() if self.prefix() ] )
+        [remove(i) for i in listdir() if self.prefix() in i]
 
     async def dataStream(self):      
         if isWeekday() and markethours():
@@ -158,12 +159,12 @@ class IntraDay(Frequency):
         else:
             print('not now')
             raise InterruptedError
-                    
-                
 
-
-        
-
+    def UpdateCloud(self) -> None:
+        if not self.NewInterval():
+            raise PermissionError('not the right time')
+        else: 
+            self.collectDataToCloud()
     
 class MultiDay(Frequency):
     def __init__(self, symbol, start=None, end=None):
@@ -281,10 +282,10 @@ def isWeekday():
     return 7 > date.today().weekday() <= 4
 
 def markethours():
-    return time(9,30) < datetime.now().time() < time(16,3)
+    return time(9,30) < datetime.now().time() < time(16,2)
 
 def marketclosed():
-    return datetime.now().time() > time(16,3)
+    return datetime.now().time() > time(16,2)
 
 def isFriday():
     return date.today().weekday() == 4
