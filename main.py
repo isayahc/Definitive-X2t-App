@@ -13,6 +13,8 @@ def update_all():
             print(f'error occured in {d}')
             continue
 
+def test():
+    update_all()
 
 if __name__ =='__main__':
     i = Freq.IntraDay('spy',1)
@@ -20,8 +22,7 @@ if __name__ =='__main__':
     y = Freq.Weekly('spy')
     z = Freq.Monthly('spy')
     dated =(x,y,z,i)
-    update_all()
-    # sched = BlockingScheduler()
-    # sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=4 )
-    # sched.start()
+    sched = BlockingScheduler()
+    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=4 )
+    sched.start()
 
