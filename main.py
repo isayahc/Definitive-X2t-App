@@ -24,5 +24,6 @@ if __name__ =='__main__':
     z = Freq.Monthly('spy')
     dated =(x,y,z,i)
     sched = BlockingScheduler()
-    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=4 )
+    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 20,minute=4 )
+    #remember it is based on UTC
     sched.start()
