@@ -17,6 +17,9 @@ def update_all():
 def test():
     update_all()
 
+def test2():
+    print(datetime.now().__str__())
+
 if __name__ =='__main__':
     i = Freq.IntraDay('spy',1)
     x = Freq.Daily('spy')
@@ -24,6 +27,9 @@ if __name__ =='__main__':
     z = Freq.Monthly('spy')
     dated =(x,y,z,i)
     sched = BlockingScheduler()
+    x = datetime.now()
+    print(x)
     sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 20,minute=4 )
+    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= x.hour,minute=x.minute+1 )
     #remember it is based on UTC
     sched.start()
