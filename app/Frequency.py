@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, time, timedelta, datetime, timezone
 from os import path, getenv, listdir, remove
 import pandas as pd
 from app.Cloud import Cloud
@@ -6,6 +6,7 @@ from abc import abstractmethod
 from alpha_vantage.timeseries import TimeSeries
 from calendar import monthrange
 import asyncio
+import pytz
 
 key = alphaKey = getenv('ALPHA_KEY')
 
@@ -244,6 +245,21 @@ class MultiDay(Frequency):
             self.cloud.storeDataonBucket(self.fileFormat())
             print('presto')
 
+    def df_filter_by_date (self,year=None,month=None) -> pd.DataFrame:
+        '''year'''
+        df = self.cloud_df()
+        if month and month <10:
+            month = f'0{month}'
+        if month and year:
+            x =  [ str(i) for i in df.index if f'{str(year)}-{str(month)}' in i]
+            return df.loc[x]
+        elif month and not year:
+            x =  [ str(i) for i in df.index if f'-{str(month)}' in i[4:7]]
+            return df.loc[x]
+        elif not month and year:
+            x =  [ str(i) for i in df.index if f'{str(year)}' in i]
+            return df.loc[x]
+
     @abstractmethod
     def NewInterval(self) -> bool: pass
 
@@ -296,7 +312,7 @@ class Monthly(MultiDay):
 
     def NewInterval(self) -> bool:
         '''true if the trading month is over'''
-        return dateEndofMonth()
+        return dateEndofMonth() and marketclosed()
 
 ### Helper functions
 def datetimeToDate(x:datetime):
@@ -309,10 +325,10 @@ def isWeekday():
     return 7 > date.today().weekday() <= 4
 
 def markethours():
-    return time(9,30) < datetime.now().time() < time(16,3)
+    return time(14, 1) < datetime.now(timezone.utc).time() < time(20, 3)
 
 def marketclosed():
-    return datetime.now().time() > time(16,3)
+    return datetime.now(timezone.utc).time() > time(20, 5, 30, 40306)
 
 def isFriday():
     return date.today().weekday() == 4
