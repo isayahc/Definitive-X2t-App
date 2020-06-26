@@ -30,7 +30,7 @@ class Frequency:
     
     def SaveToCloud(self)->None:
         '''Saves data to s3 bucket'''
-        self.c.storeDataonBucket(self.fileFormat())
+        self.cloud.storeDataonBucket(self.fileFormat())
     
     def loadData(self)->None:
         '''will attempt to retrieve data on the local machine. If unseccessful, it will search the cloud
@@ -147,7 +147,7 @@ class IntraDay(Frequency):
 
         x = [i for i in listdir() if self.prefix() in i and i not in self.ValidFiles() ]
         [self.cloud.storeDataonBucket(i) for i in x ]
-        # print( [ i in  listdir() if self.prefix() ] )
+        [remove(i) for i in  listdir() if self.prefix() in i] 
 
     async def dataStream(self):      
         if isWeekday() and markethours():
@@ -257,7 +257,11 @@ class Daily(MultiDay):
     def collectData(self,outputsize='compact') -> pd.DataFrame:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_daily(self.symbol,outputsize='full')
-        return pd.DataFrame(data)
+
+        if self.NewInterval():
+            return pd.DataFrame(data)
+        return pd.DataFrame(data)[1:]
+        
 
     def NewInterval(self) -> bool:
         '''True if the trading day is over'''
@@ -270,7 +274,10 @@ class Weekly(MultiDay):
     def collectData(self,outputsize='compact') -> pd.DataFrame:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_weekly(self.symbol)
-        return pd.DataFrame(data)
+       
+        if self.NewInterval():
+            return pd.DataFrame(data)
+        return pd.DataFrame(data)[1:]
 
     def NewInterval(self) ->bool:
         '''true if the trading week is over'''
@@ -283,7 +290,9 @@ class Monthly(MultiDay):
     def collectData(self,outputsize='compact') -> pd.DataFrame:
         ts = TimeSeries(key= key, output_format='pandas')
         data , metadata = ts.get_monthly(self.symbol)
-        return  pd.DataFrame(data)
+        if self.NewInterval():
+            return pd.DataFrame(data)
+        return pd.DataFrame(data)[1:]
 
     def NewInterval(self) -> bool:
         '''true if the trading month is over'''
