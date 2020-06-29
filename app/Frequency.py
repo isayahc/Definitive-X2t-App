@@ -246,7 +246,7 @@ class MultiDay(Frequency):
             print('presto')
 
     def df_filter_by_date (self,year=None,month=None) -> pd.DataFrame:
-        '''year'''
+        '''year and month of selected df'''
         df = self.cloud_df()
         if month and month <10:
             month = f'0{month}'
@@ -259,6 +259,13 @@ class MultiDay(Frequency):
         elif not month and year:
             x =  [ str(i) for i in df.index if f'{str(year)}' in i]
             return df.loc[x]
+
+    def df_filter_Weekday(self,day:int):
+        '''will filter to only the days matching the day 1=mon'''
+        weekdays =  list(map(date.isoweekday,pd.to_datetime(self.index)))
+        d_df_20 = d_df_20.assign(Weekday=weekdays)
+        #this statement might cause issues in the future
+        return d_df_20.where(d_df_20['Weekday']==day).dropna()
 
     @abstractmethod
     def NewInterval(self) -> bool: pass
@@ -277,6 +284,8 @@ class Daily(MultiDay):
         if self.NewInterval():
             return pd.DataFrame(data)
         return pd.DataFrame(data)[1:]
+
+
         
 
     def NewInterval(self) -> bool:
@@ -320,12 +329,12 @@ def datetimeToDate(x:datetime):
 
 strToDate =lambda x : date(*[int(i) for i in str(x).split('-')])
 
-def isWeekday():
+def isWeekday() ->bool:
     today = date.today().weekday()
     return 7 > date.today().weekday() <= 4
 
 def markethours():
-    return time(14, 1) < datetime.now(timezone.utc).time() < time(20, 3)
+    return (time(14, 1) < datetime.now(timezone.utc).time() < time(20, 3)) and isWeekday()
 
 def marketclosed():
     return datetime.now(timezone.utc).time() > time(20, 5, 30, 40306)
