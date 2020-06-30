@@ -171,6 +171,9 @@ class IntraDay(Frequency):
             raise PermissionError('not the right time')
         else: 
             self.collectDataToCloud()
+            
+    def NewInterval(self):
+        return marketclosed()
                      
 class MultiDay(Frequency):
     def __init__(self, symbol, start=None, end=None):
@@ -285,9 +288,6 @@ class Daily(MultiDay):
             return pd.DataFrame(data)
         return pd.DataFrame(data)[1:]
 
-
-        
-
     def NewInterval(self) -> bool:
         '''True if the trading day is over'''
         return marketclosed() and isWeekday()
@@ -334,10 +334,12 @@ def isWeekday() ->bool:
     return 7 > date.today().weekday() <= 4
 
 def markethours():
-    return (time(14, 1) < datetime.now(timezone.utc).time() < time(20, 3)) and isWeekday()
+    #UTC time
+    return (time(12, 29) < datetime.now(timezone.utc).time() < time(20, 2)) and isWeekday()
 
 def marketclosed():
-    return datetime.now(timezone.utc).time() > time(20, 5, 30, 40306)
+    #UTC time
+    return datetime.now(timezone.utc).time() > time(20, 2, 30, 40306)
 
 def isFriday():
     return date.today().weekday() == 4

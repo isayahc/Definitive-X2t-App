@@ -1,10 +1,11 @@
 import pandas as pd 
-from datetime import date
+from datetime import date, timedelta
 from app.Frequency import IntraDay, Monthly, Daily, Weekly
 import matplotlib.pyplot as plt
 import numpy as np
 
 def split_by_week(df):
+    #find ways to improve
     '''returns a 2d array of days'''
     i = 0 
     dd = [[]]
@@ -13,7 +14,7 @@ def split_by_week(df):
     
     while i < len(df) -1:
         dd[dd_num].append(data[i])
-        if data[i].day == data[i+1].day - 3:
+        if data[i] <= data[i+1] - timedelta(days=3):
             print('new Week')
             dd.append([])
             dd_num +=1
@@ -23,9 +24,9 @@ def split_by_week(df):
     dt_to_d = lambda x: str(x).split(' ')[0]
     return [  (df.loc[dt_to_d(i[0]):dt_to_d(i[-1])])  for i in dd ] 
 
-def locate_min_row(df):
+def locate_min_row(df,column):
     #turn into decorator
-    return df.loc[df['3. low'] == df['3. low'].min()]
+    return df.loc[df[column] == df[column].min()]
 
 def df_filter_Weekday(df,day:int):
     #fix later
@@ -51,6 +52,15 @@ def add_weekdays(df):
     weekdays =  list(map(date.isoweekday,pd.to_datetime(df.index)))
     df = df.assign(Weekday=weekdays)
     return df
+
+def graph_stuff(df,column):
+    #used best for daily dataframe
+    x = np.linspace(0, 20, 100)
+    [ (d[column]-(d[column]).iloc[0]).plot() for d in split_by_week(df) ]
+    plt.show()
+    
+def flatten_column(df,column):
+    return (df[column]-(df[column]).iloc[0])
         
 
 # def main():
