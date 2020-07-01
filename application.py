@@ -7,12 +7,14 @@ from app.Cloud import Cloud
 import pandas as pd
 from app.Frequency import IntraDay
 from flask import Flask
+import asyncio
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 c = Cloud()
+
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -159,6 +161,15 @@ def update_metrics(n):
     ]
 
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+def test():
+    print('G')
     
+async def main():
+    await asyncio.gather(
+        app.run_server(debug=True),
+        test(),
+    )
+
+if __name__ == '__main__':
+    #app.run_server(debug=True)
+    asyncio.run(main())
