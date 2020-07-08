@@ -1,1 +1,2 @@
-clock: python main.py
+web: gunicorn application:server
+worker: python notmain.py

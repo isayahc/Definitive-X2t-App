@@ -5,5 +5,3 @@ XT/
 **/*.XT
 /env
 __pycahe__
-test.py 
-*/__pycahe__
