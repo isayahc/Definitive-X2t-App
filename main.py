@@ -5,6 +5,7 @@ import app.Frequency as Freq
 from app.Cloud import Cloud
 
 def update_all():
+    print("i am now running")
     for d in dated:
         try:
             d.UpdateCloud()
@@ -16,6 +17,12 @@ def update_all():
 def test():
     update_all()
 
+def test2():
+    print(datetime.now().__str__())
+    
+def test3():
+    print(" I am running as i should at 8am est")
+
 if __name__ =='__main__':
     i = Freq.IntraDay('spy',1)
     x = Freq.Daily('spy')
@@ -23,6 +30,12 @@ if __name__ =='__main__':
     z = Freq.Monthly('spy')
     dated =(x,y,z,i)
     sched = BlockingScheduler()
-    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 16,minute=4 )
+    #just to make sure things are running properly
+    x = datetime.now()
+    [print(d.NewInterval()) for d in dated]
+    print(x)
+    sched.add_job(update_all, 'cron', day_of_week='mon-fri', hour= 20,minute=5 )
+    sched.add_job(test3, 'cron', day_of_week='mon-fri', hour= 12)
+    #remember it is based on UTC
     sched.start()
-
+    
